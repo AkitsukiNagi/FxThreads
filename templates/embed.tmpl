@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .title }}</title>
+
+    <meta http-equiv="refresh" content="0; url={{ .post.URL }}">
+    <meta name="theme-color" content="#5d7c96">
+    <link rel="canonical" href="{{ .post.URL }}">
+
+    <meta property="og:type" content="{{ if .video }}video.other{{ else }}article{{ end }}">
+    <meta property="og:title" content="{{ .title }}">
+    <meta property="og:url" content="{{ .post.URL }}">
+
+    <meta property="og:description" content="{{ .content }}">
+    <meta property="og:site_name" content="FxThreads">
+
+    <meta name="twitter:card" content="{{ .cardType }}">
+    <meta name="twitter:title" content="@{{ .title }}">
+    <meta name="twitter:description" content="{{ .content }}">
+    <meta name="twitter:site" content="@threads">
+    <meta name="twitter:creator" content="@{{ .title }}">
+
+    {{ if .video }}
+        <meta property="og:video" content="{{ .video.URL }}">
+        <meta property="og:video:secure_url" content="{{ .video.URL }}">
+        <meta property="og:video:type" content="video/mp4">
+
+        <meta name="twitter:player" content="{{ .video.URL }}">
+
+        {{ if .video.CoverImage }}
+            <meta property="og:image" content="{{ .video.CoverImage }}">
+            <meta name="twitter:image" content="{{ .video.CoverImage }}">
+
+            <meta property="og:image:height" content="{{ .video.Height }}">
+            <meta property="og:image:width" content="{{ .video.Width }}">
+
+            <meta name="twitter:player:height" content="{{ .video.Height }}">
+            <meta name="twitter:player:width" content="{{ .video.Width }}">
+        {{ end }}
+    {{ else if .mainImage }}
+        <meta property="og:image" content="{{ .mainImage }}">
+        <meta name="twitter:image" content="{{ .mainImage }}">
+    {{ end }}
+
+    {{ if gt (len .post.Medias) 1 }}
+        {{ range .post.Medias }}
+            {{ if not .IsVideo }}
+                <meta property="og:image" content="{{ .URL }}">
+                <meta name="twitter:image" content="{{ .URL }}">
+            {{ end }}
+        {{ end }}
+    {{ end }}
+
+    <link rel="alternate" type="application/json+oembed" href="https://{{ .baseDomain }}/api/oembed/{{ .post.ID }}?provider={{ .socialProof }}" title="{{ .post.Author.Username }}">
+    <link rel="apple-touch-icon" href="{{ .post.Author.AvatarURL }}">
+    <link rel="icon" href="{{ .post.Author.AvatarURL }}">
+</head>
+</html>
