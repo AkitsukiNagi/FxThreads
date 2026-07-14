@@ -34,15 +34,6 @@ const jsUtils = `
 			return urlString;
 		}
 	};
-
-	window.parseCount = (text) => {
-		if (!text) return 0;
-		const num = parseFloat(text.replace(/^[0-9]/g, ""));
-		if (text.toLowerCase().includes("k")) return Math.floor(num * 1000);
-		if (text.toLowerCase().includes("m")) return Math.floor(num * 1000000);
-		if (text.toLowerCase().includes("b")) return Math.floor(num * 1000000000);
-		return Math.floor(num);
-	};
 `
 
 const fetchPost = `
@@ -94,7 +85,7 @@ const fetchPost = `
 		const countEl = el.querySelector("span.ActionBarCount");
 
 		if (countEl) {
-			const val = window.parseCount(countEl?.textContent);
+			const val = countEl?.textContent;
 			switch (index) {
 				case 0:
 					results.stats.likes = val;

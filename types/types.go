@@ -16,10 +16,10 @@ type ThreadsMedia struct {
 }
 
 type ThreadsStats struct {
-	Likes    int `json:"likes"`
-	Comments int `json:"comments"`
-	Reposts  int `json:"reposts"`
-	Shares   int `json:"shares"`
+	Likes    string `json:"likes"`
+	Comments string `json:"comments"`
+	Reposts  string `json:"reposts"`
+	Shares   string `json:"shares"`
 }
 
 type ThreadsPost struct {

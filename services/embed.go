@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"slices"
 	"strings"
@@ -60,10 +59,10 @@ func ProvideEmbed(ctx *gin.Context) {
 	}
 
 	socialProof := fmt.Sprintf("❤️ %s　💬 %s　🔁 %s　📤 %s",
-		humanize(post.Stats.Likes),
-		humanize(post.Stats.Comments),
-		humanize(post.Stats.Reposts),
-		humanize(post.Stats.Shares),
+		post.Stats.Likes,
+		post.Stats.Comments,
+		post.Stats.Reposts,
+		post.Stats.Shares,
 	)
 
 	formattedContent := sanitize(post.Content)
@@ -98,21 +97,6 @@ func ProvideEmbed(ctx *gin.Context) {
 		"mainImage":   mainImage,
 		"baseDomain":  constants.BaseDomain,
 	})
-}
-
-func humanize(n int) string {
-	if n < 1000 {
-		return fmt.Sprintf("%d", n)
-	}
-	units := []string{"K", "M", "B", "T"}
-
-	exp := int(math.Log10(float64(n)) / 3)
-	val := float64(n) / math.Pow(1000, float64(exp))
-
-	return fmt.Sprintf("%s%s",
-		strings.TrimSuffix(fmt.Sprintf("%1.f", val), ".0"),
-		units[exp-1],
-	)
 }
 
 func sanitize(text string) string {
