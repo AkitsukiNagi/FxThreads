@@ -36,7 +36,10 @@ func ProvideEmbed(ctx *gin.Context) {
 		return
 	}
 
-	hasVideo := slices.ContainsFunc(post.Medias, func(m *types.ThreadsMedia) bool { return m.IsVideo })
+	hasVideo := false
+	if i := slices.IndexFunc(post.Medias, func(m *types.ThreadsMedia) bool { return m.IsVideo }); i != -1 {
+		hasVideo = post.Medias[i].CoverImage != ""
+	}
 	hasImage := slices.ContainsFunc(post.Medias, func(m *types.ThreadsMedia) bool { return !m.IsVideo })
 
 	cardType := "summary"

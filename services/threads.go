@@ -235,10 +235,15 @@ func GetPostByID(postID string) *types.ThreadsPost {
 			if err != nil {
 				slog.Error("Chromedp error (video cover fetching)")
 			} else {
-				media.CoverImage = partialVideo.CoverImage
-				media.Height = partialVideo.Height
-				media.Width = partialVideo.Width
-				post.Medias[i] = media
+				avatarURL, _ := url.Parse(post.Author.AvatarURL)
+				coverURL, _ := url.Parse(partialVideo.CoverImage)
+
+				if path.Base(avatarURL.Path) != path.Base(coverURL.Path) {
+					media.CoverImage = partialVideo.CoverImage
+					media.Height = partialVideo.Height
+					media.Width = partialVideo.Width
+					post.Medias[i] = media
+				}
 			}
 		}
 	}
