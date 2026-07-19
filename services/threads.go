@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"slices"
 	"sync"
 	"time"
 
@@ -34,99 +33,71 @@ const jsUtils = `
 			return urlString;
 		}
 	};
+
+	window.findFirstPost = (obj) => {
+		if (!obj || typeof obj !== "object") return null;
+
+		if (obj.hasOwnProperty("post")) return obj.post;
+
+		for (const key in obj) {
+			const found = window.findFirstPost(obj[key]);
+			if (found) return found;
+		}
+		return null;
+	};
 `
 
 const fetchPost = `
-(
-	(postID) => {
-	const container = document.querySelector(".OuterContainerFull");
-	if (!container) return null;
+((postID) => {
+	const scriptEl = Array.from(document.querySelectorAll("script"))
+		.find(s => s.textContent.includes("\"thread_items\"") && s.textContent.includes(` + "`\"code\":\"${postID}\"`" + `));
+	if (!scriptEl) return null;
 
-	const AvatarEl = container.querySelector(".AvatarContainer img");
-	const NameEl = container.querySelector(".NameContainer a");
-	const ContentEl = container.querySelector(".BodyTextContainer");
+	const fullData = JSON.parse(scriptEl.textContent);
 
-	const results = {
+	const post = window.findFirstPost(fullData);
+	if (!post) return null;
+
+	const result = {
 		author: {
-			username: NameEl?.innerText?.trim() || AvatarEl?.alt || "",
-			avatarURL: window.cleanURL(AvatarEl?.src),
-			url: window.cleanURL(NameEl?.href),
+			full_name: post.user.full_name,
+			username: post.user.username,
+			avatar_url: post.user.profile_pic_url,
 		},
-		content: ContentEl?.innerText?.trim() || "",
+		content: post.caption?.text,
 		medias: [],
-		stats: { likes: 0, comments: 0, reposts: 0, shares: 0 },
-		id: postID,
-		url: "",
+		stats: {
+			likes: post.like_count,
+			comments: post.text_post_app_info.direct_reply_count,
+			reposts: post.text_post_app_info.repost_count,
+			shares: post.text_post_app_info.reshare_count
+		},
+		id: post.code,
+		timestamp: post.taken_at,
 	};
 
-	results.url = ` + "`https://www.threads.com/@${results?.author.username}/post/${postID}`" + `;
-
-	const mediaElements = container.querySelectorAll("img, video source");
-	const seenUrls = new Set();
-
-	for (const el of mediaElements) {
-		if (el.closest(".AvatarContainer")) continue;
-
-		let src = el.src;
-		if (el.tagName === "SOURCE") src = el.src;
-
-		if (src && !seenUrls.has(src)) {
-			seenUrls.add(src);
-			results.medias.push({
-				url: window.cleanURL(src),
-				isVideo: el.tagName === "SOURCE" || el.tagName === "VIDEO"
+	if (post.carousel_media) {
+		for (const m of post.carousel_media) {
+			result.medias.push({
+				is_video: m.video_versions != null,
+				url: m.video_versions ? m.video_versions[0]?.url : m.image_versions2?.candidates[0]?.url,
+				cover_image: m.video_versions ? m.image_versions2?.candidates[0]?.url : "",
+				width: m.original_width,
+				height: m.original_height
 			});
 		}
-		if (results.medias.length >= 4) break;
+	} else if (post.image_versions2) {
+	 	result.medias.push({
+			is_video: post.video_versions != null,
+			url: post.video_versions ? post.video_versions[0]?.url : post.image_versions2?.candidates[0]?.url,
+			cover_image: post.video_versions ? post.image_versions2?.candidates[0]?.url : "",
+			height: post.original_height,
+			width: post.original_width
+		});
 	}
-
-	const statElements = container.querySelectorAll("span.ActionBarIcon");
-	statElements.forEach((el, index) => {
-		const countEl = el.querySelector("span.ActionBarCount");
-
-		if (countEl) {
-			const val = countEl?.textContent;
-			switch (index) {
-				case 0:
-					results.stats.likes = val;
-					break;
-				case 1:
-					results.stats.comments = val;
-					break;
-				case 2:
-					results.stats.reposts = val;
-					break;
-				case 3:
-					results.stats.shares = val;
-					break;
-			}
-		}
-	});
-
-	return results;
-	}
-)("%s");
-`
-
-const fetchVideo = `
-(() => {
-	const result = {
-		coverImage: "",
-		height: 0,
-		width: 0,
-	}
-
-	const firstVideoCover = document.querySelector("meta[property=\"og:image\"]");
-	if (firstVideoCover) result.coverImage = window.cleanURL(firstVideoCover.content);
-
-	const coverHeight = document.querySelector("meta[property=\"og:image:height\"]");
-	if (coverHeight) result.height = window.parseCount(coverHeight.content);
-
-	const coverWidth = document.querySelector("meta[property=\"og:image:width\"]");
-	if (coverWidth) result.width = window.parseCount(coverWidth.content);
 
 	return result;
-})();
+})("%s");
 `
 
 var bp *browser.BrowserPool
@@ -204,10 +175,12 @@ func GetPostByID(postID string) *types.ThreadsPost {
 	}
 
 	var post *types.ThreadsPost
+	fetchURL := constants.ThreadsURL + fmt.Sprintf("/t/%s", postID)
 
 	err := chromedp.Run(bp.Context,
-		chromedp.Navigate(constants.ThreadsURL+fmt.Sprintf("/t/%s/embed", postID)),
-		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.Navigate(fetchURL),
+		chromedp.Poll(`window.location.href !== "`+fetchURL+`"`, nil),
+		chromedp.WaitReady(`body`, chromedp.ByQuery),
 		chromedp.Evaluate(jsUtils, nil),
 		chromedp.Evaluate(fmt.Sprintf(fetchPost, postID), &post),
 	)
@@ -217,36 +190,12 @@ func GetPostByID(postID string) *types.ThreadsPost {
 	}
 
 	if post == nil {
-		slog.Debug("Got empty post", "request_url", constants.ThreadsURL+fmt.Sprintf("/t/%s/embed", postID))
+		slog.Debug("Got empty post", "request_url", constants.ThreadsURL+fmt.Sprintf("/t/%s", postID))
 		return nil
 	}
 
-	if post.Medias != nil {
-		if i := slices.IndexFunc(post.Medias, func(m *types.ThreadsMedia) bool { return m.IsVideo }); i != -1 {
-			media := post.Medias[i]
-
-			var partialVideo *types.ThreadsMedia
-			err = chromedp.Run(bp.Context,
-				chromedp.Navigate(post.URL),
-				chromedp.WaitReady("body", chromedp.ByQuery),
-				chromedp.Evaluate(jsUtils, nil),
-				chromedp.Evaluate(fetchVideo, &partialVideo),
-			)
-			if err != nil {
-				slog.Error("Chromedp error (video cover fetching)")
-			} else {
-				avatarURL, _ := url.Parse(post.Author.AvatarURL)
-				coverURL, _ := url.Parse(partialVideo.CoverImage)
-
-				if path.Base(avatarURL.Path) != path.Base(coverURL.Path) {
-					media.CoverImage = partialVideo.CoverImage
-					media.Height = partialVideo.Height
-					media.Width = partialVideo.Width
-					post.Medias[i] = media
-				}
-			}
-		}
-	}
+	post.Author.URL = constants.ThreadsURL + "/@" + post.Author.Username
+	post.URL = constants.ThreadsURL + fmt.Sprintf("/@%s/post/%s", post.Author.Username, post.ID)
 
 	postCache.Set(postID, post, 3*time.Minute)
 	return post

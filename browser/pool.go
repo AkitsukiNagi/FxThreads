@@ -28,7 +28,9 @@ func NewBrowserPool() *BrowserPool {
 
 	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 
-	ctx, cancel := chromedp.NewContext(allocCtx)
+	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithErrorf(func(s string, a ...any) {
+		slog.Error("chromedp error", "msg", s, "args", a)
+	}))
 
 	if err := chromedp.Run(ctx); err != nil {
 		slog.Error("Failed to start browser", "error", err)

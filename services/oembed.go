@@ -1,8 +1,8 @@
 package services
 
 import (
+	"fmt"
 	"net/http"
-	"slices"
 
 	"fxthreads/types"
 
@@ -24,23 +24,14 @@ func ProvideOEmbed(ctx *gin.Context) {
 		return
 	}
 
-	var video *types.ThreadsMedia
-	if i := slices.IndexFunc(post.Medias, func(m *types.ThreadsMedia) bool { return m.IsVideo }); i != -1 {
-		video = post.Medias[i]
-	}
-
 	oEmbed := &types.OEmbed{
-		Version:      "1.0",
-		Type:         "rich",
+		AuthorName:   fmt.Sprintf("%s (@%s)", post.Author.FullName, post.Author.Username),
+		AuthorURL:    post.URL,
 		ProviderName: "Fxthreads",
 		ProviderURL:  "https://fx.akitsuki.me",
-		AuthorName:   post.Author.Username,
-		AuthorURL:    post.URL,
 		Title:        post.Content,
-	}
-
-	if video != nil {
-		oEmbed.Type = "video"
+		Type:         "rich",
+		Version:      "1.0",
 	}
 
 	if provider != "" {

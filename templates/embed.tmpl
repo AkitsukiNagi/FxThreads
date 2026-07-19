@@ -1,59 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ .title }}</title>
-
-    <meta http-equiv="refresh" content="0; url={{ .post.URL }}">
-    <meta name="theme-color" content="#5d7c96">
     <link rel="canonical" href="{{ .post.URL }}">
-
-    <meta property="og:type" content="{{ if .video }}video.other{{ else }}article{{ end }}">
-    <meta property="og:title" content="{{ .title }}">
     <meta property="og:url" content="{{ .post.URL }}">
-
-    <meta property="og:description" content="{{ .content }}">
-    <meta property="og:site_name" content="FxThreads">
-
-    <meta name="twitter:card" content="{{ .cardType }}">
-    <meta name="twitter:title" content="@{{ .title }}">
-    <meta name="twitter:description" content="{{ .content }}">
-    <meta name="twitter:site" content="@threads">
-    <meta name="twitter:creator" content="@{{ .title }}">
-
-    {{ if .video }}
-        <meta property="og:video" content="{{ .video.URL }}">
-        <meta property="og:video:secure_url" content="{{ .video.URL }}">
-        <meta property="og:video:type" content="video/mp4">
-
-        <meta name="twitter:player" content="{{ .video.URL }}">
-
-        {{ if .video.CoverImage }}
-            <meta property="og:image" content="{{ .video.CoverImage }}">
-            <meta name="twitter:image" content="{{ .video.CoverImage }}">
-
-            <meta property="og:image:height" content="{{ .video.Height }}">
-            <meta property="og:image:width" content="{{ .video.Width }}">
-
-            <meta name="twitter:player:height" content="{{ .video.Height }}">
-            <meta name="twitter:player:width" content="{{ .video.Width }}">
-        {{ end }}
-    {{ else if .mainImage }}
-        <meta property="og:image" content="{{ .mainImage }}">
-        <meta name="twitter:image" content="{{ .mainImage }}">
-    {{ end }}
-
-    {{ if gt (len .post.Medias) 1 }}
+    <meta name="twitter:site" content="{{ .title }}">
+    <meta name="twitter:creator" content="{{ .title }}">
+    <meta name="theme-color" content="#5d7c96">
+    <meta name="twitter:title" content="{{ .title }}">
+    <meta http-equiv="refresh" content="0; url={{ .post.URL }}">
+    {{ if .post.Medias }}
         {{ range .post.Medias }}
-            {{ if not .IsVideo }}
+            {{ if .IsVideo }}
+                <meta name="twitter:player:width" content="{{ .Width }}">
+                <meta name="twitter:player:height" content="{{ .Height }}">
+                <meta name="twitter:player:stream" content="{{ .URL }}">
+                <meta name="twitter:player:stream:content_type" content="video/mp4">
+                
+                <meta property="og:video" content="{{ .URL }}">
+                <meta property="og:video:secure_url" content="{{ .URL }}">
+                <meta property="og:video:width" content="{{ .Width }}">
+                <meta property="og:video:height" content="{{ .Height }}">
+                <meta property="og:video:type" content="video/mp4">
+                <meta property="og:image" content="{{ .CoverImage }}">
+                <meta name="twitter:image" content="0">
+            {{ else }}
                 <meta property="og:image" content="{{ .URL }}">
                 <meta name="twitter:image" content="{{ .URL }}">
+                <meta property="og:image:width" content="{{ .Width }}">
+                <meta property="og:image:height" content="{{ .Height }}">
             {{ end }}
         {{ end }}
     {{ end }}
 
-    <link rel="alternate" type="application/json+oembed" href="https://{{ .baseDomain }}/api/oembed/{{ .post.ID }}?provider={{ .socialProof }}" title="{{ .post.Author.Username }}">
     <link rel="apple-touch-icon" href="{{ .post.Author.AvatarURL }}">
-    <link rel="icon" href="{{ .post.Author.AvatarURL }}">
+    <meta name="twitter:card" content="{{ .cardType }}">
+    <meta property="og:title" content="{{ .title }}">
+    <meta property="og:description" content="{{ .content }}">
+    <meta property="og:site_name" content="FxThreads">
+    <meta property="article:published_time" content="{{ .timestamp }}">
+    <link rel="alternate" type="application/json+oembed" href="https://{{ .baseDomain }}/api/oembed/{{ .post.ID }}?provider={{ .socialProof }}" title="{{ .post.Author.FullName }}">
 </head>
 </html>
