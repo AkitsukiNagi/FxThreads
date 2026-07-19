@@ -22,6 +22,7 @@ func NewBrowserPool() *BrowserPool {
 		chromedp.DisableGPU,
 		chromedp.IgnoreCertErrors,
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("incognito", true),
 		chromedp.UserAgent(constants.Agent),
 	)
 
